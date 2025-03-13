@@ -3,10 +3,14 @@
 include_once(ROOT_PATH . "/app/database/db.php");
 include_once(ROOT_PATH . "/app/helpers/middleware.php");
 
+use Laminas\Http\Client;
+use Laminas\Http\Request;
+
 $table = 'posts';
 
-$clientTopics = new \Laminas\Http\Client('http://localhost:8080/topics', ['timeout' => 30]);
-$clientTopics->setMethod(\Laminas\Http\Request::METHOD_GET);
+// Pobranie tematów przez API
+$clientTopics = new Client('http://localhost:8080/topics', ['timeout' => 30]);
+$clientTopics->setMethod(Request::METHOD_GET);
 $responseTopics = $clientTopics->send();
 if ($responseTopics->isSuccess()) {
     $topics = json_decode($responseTopics->getBody(), true);
@@ -14,12 +18,10 @@ if ($responseTopics->isSuccess()) {
     $topics = [];
 }
 
-$client = new \Laminas\Http\Client('http://localhost:8080/posts', [
-    'timeout' => 30,
-]);
-$client->setMethod(\Laminas\Http\Request::METHOD_GET);
+// Pobranie postów przez API
+$client = new Client('http://localhost:8080/posts', ['timeout' => 30]);
+$client->setMethod(Request::METHOD_GET);
 $response = $client->send();
-
 if ($response->isSuccess()) {
     $posts = json_decode($response->getBody(), true);
 } else {
@@ -36,10 +38,8 @@ $published = "";
 
 if (isset($_GET['id'])) {
     $postId = $_GET['id'];
-    $client = new \Laminas\Http\Client('http://localhost:8080/posts/' . $postId, [
-         'timeout' => 30,
-    ]);
-    $client->setMethod(\Laminas\Http\Request::METHOD_GET);
+    $client = new Client('http://localhost:8080/posts/' . $postId, ['timeout' => 30]);
+    $client->setMethod(Request::METHOD_GET);
     $response = $client->send();
     
     if ($response->isSuccess()) {
@@ -60,10 +60,8 @@ if (isset($_GET['id'])) {
 
 if(isset($_GET['delete'])){
     $postId = $_GET['delete'];
-    $client = new \Laminas\Http\Client('http://localhost:8080/posts/' . $postId, [
-         'timeout' => 30,
-    ]);
-    $client->setMethod(\Laminas\Http\Request::METHOD_DELETE);
+    $client = new Client('http://localhost:8080/posts/' . $postId, ['timeout' => 30]);
+    $client->setMethod(Request::METHOD_DELETE);
     $response = $client->send();
 
     if($response->isSuccess()){
@@ -79,9 +77,7 @@ if (isset($_GET['published']) && isset($_GET['p_id'])) {
     $p_id = $_GET['p_id'];
 
     // Przygotowanie klienta HTTP i żądania PATCH
-    $client = new \Laminas\Http\Client('http://localhost:8080/posts/' . $p_id, [
-         'timeout' => 30,
-    ]);
+    $client = new Client('http://localhost:8080/posts/' . $p_id, ['timeout' => 30]);
     $client->setMethod('PATCH'); // Używamy metody PATCH
     $patchData = ['published' => $published];
     $client->setRawBody(json_encode($patchData));
@@ -99,7 +95,6 @@ if (isset($_GET['published']) && isset($_GET['p_id'])) {
     }
 }
 
-
 if(isset($_POST['add-post'])){
     // Przygotowanie danych do wysłania do API
     $postData = [
@@ -113,20 +108,16 @@ if(isset($_POST['add-post'])){
     ];
 
     // Użycie Laminas HTTP Client do wysłania żądania POST do REST API
-    $client = new \Laminas\Http\Client('http://localhost:8080/posts', [
-         'timeout' => 30,
-    ]);
-    $client->setMethod(\Laminas\Http\Request::METHOD_POST);
+    $client = new Client('http://localhost:8080/posts', ['timeout' => 30]);
+    $client->setMethod(Request::METHOD_POST);
     $client->setRawBody(json_encode($postData));
     $client->setEncType('application/json');
 
     $response = $client->send();
 
     if($response->isSuccess()){
-         // Na przykład zapisz komunikat o sukcesie w sesji
          $_SESSION['message'] = 'Post został utworzony';
     } else {
-         // Opcjonalnie: zapisz komunikat o błędzie
          $_SESSION['message'] = 'Błąd: ' . $response->getStatusCode();
     }
 }
@@ -137,7 +128,7 @@ if(isset($_POST['update-post'])) {
     // Nie wywołujemy już starej walidacji, jeśli wszystko jest obsługiwane przez API Tools
     $errors = array();
     
-    // Przetwarzanie przesyłania plików (jak wyżej) pozostaje bez zmian...
+    // Przetwarzanie przesyłania plików pozostaje bez zmian...
     if(!empty($_FILES['image']['name'])) {
         $image_name = time() . '_' . $_FILES['image']['name'];
         $destination = ROOT_PATH . "/assets/images/" . $image_name;
@@ -172,10 +163,8 @@ if(isset($_POST['update-post'])) {
         $_POST['body'] = htmlentities($_POST['body']);
 
         // Użycie Laminas HTTP Client do wysłania żądania PUT do REST API
-        $client = new \Laminas\Http\Client('http://localhost:8080/posts/' . $id, [
-             'timeout' => 30,
-        ]);
-        $client->setMethod(\Laminas\Http\Request::METHOD_PUT);
+        $client = new Client('http://localhost:8080/posts/' . $id, ['timeout' => 30]);
+        $client->setMethod(Request::METHOD_PUT);
         $client->setRawBody(json_encode($_POST));
         $client->setEncType('application/json');
 
